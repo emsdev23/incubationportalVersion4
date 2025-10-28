@@ -9,7 +9,7 @@ import { FaExternalLinkAlt } from "react-icons/fa";
 import { GoLink } from "react-icons/go";
 import { HiLink } from "react-icons/hi";
 import { Link } from "react-router-dom";
-
+import Spinner from "../../Components/Spinner";
 import style from "../Navbar.module.css";
 import {
   CheckCircle,
@@ -35,6 +35,7 @@ import * as XLSX from "xlsx"; // Add this import for Excel export
 import { DataContext } from "../Datafetching/DataProvider";
 import ChangePasswordModal from "./ChangePasswordModal";
 import ContactModal from "./ContactModal";
+import DocumentsTable from "../DocumentUpload/DocumentsTable";
 
 const StartupDashboard = () => {
   const {
@@ -350,8 +351,8 @@ const StartupDashboard = () => {
     (Number(roleid) === 1 && adminviewData && !incubatee)
   ) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-lg">Loading startup data...</div>
+      <div>
+        <Spinner />
       </div>
     );
   }
@@ -1373,6 +1374,30 @@ const StartupDashboard = () => {
             </tbody>
           </table>
 
+          {/* Add this after your closing </table> tag, before </div> */}
+          {totalPages > 1 && (
+            <div className={styles.paginationControls}>
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
           {/* Rest of your code remains the same */}
         </div>
 
@@ -1387,6 +1412,8 @@ const StartupDashboard = () => {
           />
         )}
       </div>
+      <br />
+      {Number(roleid) === 4 && <DocumentsTable />}
 
       <br />
       <DDIDocumentsTable userRecID={userRecID} />

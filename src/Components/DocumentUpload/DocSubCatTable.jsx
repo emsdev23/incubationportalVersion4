@@ -20,7 +20,7 @@ export default function DocSubCatTable() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const IP = "http://121.242.232.212:8086";
+  const IP = "http://121.242.232.212:8089";
 
   // New loading states for specific operations
   const [isDeleting, setIsDeleting] = useState({});
@@ -402,18 +402,7 @@ export default function DocSubCatTable() {
           <table className="doccat-table">
             <thead>
               <tr>
-                {/* <th
-                  className="sortable-header"
-                  onClick={() => requestSort("sno")}
-                >
-                  S.No {getSortIcon("sno")}
-                </th> */}
-                <th
-                  className="sortable-header"
-                  onClick={() => requestSort("docsubcatrecid")}
-                >
-                  ID {getSortIcon("docsubcatrecid")}
-                </th>
+                <th>S.No</th>
                 <th
                   className="sortable-header"
                   onClick={() => requestSort("doccatname")}
@@ -463,8 +452,7 @@ export default function DocSubCatTable() {
               {sortedSubcats.length > 0 ? (
                 sortedSubcats.map((subcat, idx) => (
                   <tr key={subcat.docsubcatrecid || idx}>
-                    {/* <td>{idx + 1}</td> */}
-                    <td>{subcat.docsubcatrecid}</td>
+                    <td>{idx + 1}</td>
                     <td>{subcat.doccatname || "N/A"}</td>
                     <td>{subcat.docsubcatname}</td>
                     <td>{subcat.docsubcatdescription}</td>

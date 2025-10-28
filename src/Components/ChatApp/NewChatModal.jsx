@@ -125,7 +125,7 @@ const NewChatModal = ({ onClose, onChatCreated, currentUser }) => {
     try {
       const token = sessionStorage.getItem("token");
       const response = await fetch(
-        "http://121.242.232.212:8089/itelinc/resources/generic/getspocs",
+        "http://121.242.232.212:8086/itelinc/resources/generic/getspocs",
         {
           method: "POST",
           headers: {

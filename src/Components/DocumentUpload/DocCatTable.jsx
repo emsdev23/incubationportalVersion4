@@ -29,7 +29,7 @@ export default function DocCatTable() {
   });
 
   // ✅ Fetch all categories
-  const IP = "http://121.242.232.212:8086";
+  const IP = "http://121.242.232.212:8089";
   const fetchCategories = () => {
     setLoading(true);
     setError(null);
@@ -79,11 +79,6 @@ export default function DocCatTable() {
     // Handle null/undefined values
     if (value === null || value === undefined) {
       return "";
-    }
-
-    // For S.No column, use the original index
-    if (key === "sno") {
-      return originalIndex;
     }
 
     // Handle date/time strings
@@ -357,18 +352,7 @@ export default function DocCatTable() {
           <table className="doccat-table">
             <thead>
               <tr>
-                {/* <th
-                  className="sortable-header"
-                  onClick={() => requestSort("sno")}
-                >
-                  S.No {getSortIcon("sno")}
-                </th> */}
-                <th
-                  className="sortable-header"
-                  onClick={() => requestSort("doccatrecid")}
-                >
-                  ID {getSortIcon("doccatrecid")}
-                </th>
+                <th>S.No</th>
                 <th
                   className="sortable-header"
                   onClick={() => requestSort("doccatname")}
@@ -412,8 +396,7 @@ export default function DocCatTable() {
               {sortedCats.length > 0 ? (
                 sortedCats.map((cat, idx) => (
                   <tr key={cat.doccatrecid || idx}>
-                    {/* <td>{idx + 1}</td> */}
-                    <td>{cat.doccatrecid}</td>
+                    <td>{idx + 1}</td>
                     <td>{cat.doccatname}</td>
                     <td>{cat.doccatdescription}</td>
                     <td>
