@@ -131,16 +131,22 @@ const LoginForm = () => {
 
       // Save session data
       localStorage.clear();
+
+      // For admin (roleid "0"), set userid to "ALL", otherwise use the actual userid
+      const useridValue = roleid === "0" ? "ALL" : userid;
       sessionStorage.setItem("userid", userid);
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("roleid", roleid);
       sessionStorage.setItem("email", formData.username);
-      sessionStorage.setItem("incUserid", incuserid);
 
-      // Update context
+      // For admin (roleid "0"), set incuserid to "ALL", otherwise use the actual incuserid
+      const incuseridValue = roleid === "0" ? "ALL" : incuserid;
+      sessionStorage.setItem("incuserid", incuseridValue);
+
+      // Update context with the correct values
       setUserid(userid);
       setroleid(roleid);
-      setincuserid(incuserid);
+      setincuserid(incuseridValue);
       setFormData((prev) => ({
         ...prev,
         password: "",
@@ -150,7 +156,16 @@ const LoginForm = () => {
       Swal.close();
 
       // Redirect based on role
-      if (roleid === "1") {
+      if (roleid === "0") {
+        Swal.fire({
+          icon: "success",
+          title: "Welcome Admin!",
+          text: "Redirecting...",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        setTimeout(() => navigate("/Incubation/Dashboard"), 1000);
+      } else if (roleid === "1") {
         Swal.fire({
           icon: "success",
           title: "Welcome Incubator!",
@@ -303,7 +318,7 @@ const LoginForm = () => {
           <div className={styles.versionContainer}>
             <span className={styles.versionLabel}>Version</span>
 
-            <span className={styles.versionNumber}> 0.0.2</span>
+            <span className={styles.versionNumber}> 0.0.3</span>
           </div>
           <div className={styles.copyright}>
             © {new Date().getFullYear()} ITEL. All rights reserved.

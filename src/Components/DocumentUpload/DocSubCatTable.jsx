@@ -8,7 +8,7 @@ import { IPAdress } from "../Datafetching/IPAdrees";
 export default function DocSubCatTable() {
   const userId = sessionStorage.getItem("userid");
   const token = sessionStorage.getItem("token");
-  const incUserid = sessionStorage.getItem("incUserid");
+  const incUserid = sessionStorage.getItem("incuserid");
 
   const [subcats, setSubcats] = useState([]);
   const [cats, setCats] = useState([]); // categories for dropdown
@@ -33,6 +33,30 @@ export default function DocSubCatTable() {
     key: null,
     direction: "ascending",
   });
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return "";
+
+    // ✅ If it's an array, join it into one continuous string
+    if (Array.isArray(timestamp)) {
+      timestamp = timestamp
+        .map((num) => num.toString().padStart(2, "0"))
+        .join("");
+    } else {
+      timestamp = String(timestamp).replace(/,/g, "");
+    }
+
+    if (timestamp.length < 14) timestamp = timestamp.padEnd(14, "0");
+
+    const year = timestamp.substring(0, 4);
+    const month = timestamp.substring(4, 6);
+    const day = timestamp.substring(6, 8);
+    const hour = timestamp.substring(8, 10);
+    const minute = timestamp.substring(10, 12);
+    const second = timestamp.substring(12, 14);
+
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  };
 
   // Fetch all subcategories
   const fetchSubCategories = () => {
@@ -469,37 +493,13 @@ export default function DocSubCatTable() {
                         ? subcat.docsubcatcreatedby
                         : "Admin"}
                     </td>
-                    <td>
-                      {new Date(subcat.docsubcatcreatedtime)
-                        .toLocaleString("en-US", {
-                          month: "short",
-                          day: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                          hour12: false,
-                        })
-                        .replace(",", "")}
-                    </td>
+                    <td>{formatTimestamp(subcat.docsubcatcreatedtime)}</td>
                     <td>
                       {isNaN(subcat.docsubcatmodifiedby)
                         ? subcat.docsubcatmodifiedby
                         : "Admin"}
                     </td>
-                    <td>
-                      {new Date(subcat.docsubcatmodifiedtime)
-                        .toLocaleString("en-US", {
-                          month: "short",
-                          day: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                          hour12: false,
-                        })
-                        .replace(",", "")}
-                    </td>
+                    <td>{formatTimestamp(subcat.docsubcatmodifiedtime)}</td>
                     <td>
                       <button
                         className="btn-edit"

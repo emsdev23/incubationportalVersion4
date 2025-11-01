@@ -19,7 +19,8 @@ const COLORS = [
 ];
 
 const CompanyFieldChart = ({ byField }) => {
-  if (!byField || byField.length === 0) return <p>No data available</p>;
+  // if (!byField || byField.length === 0) return <p>No data available</p>;
+  if (!byField || byField.length === 0) return <p></p>;
 
   const total = byField.reduce((sum, item) => sum + item.incubatees_count, 0);
 

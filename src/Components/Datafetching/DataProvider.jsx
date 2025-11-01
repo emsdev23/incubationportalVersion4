@@ -32,6 +32,12 @@ export const DataProvider = ({ children }) => {
     sessionStorage.getItem("incuserid") || null
   );
 
+  // NEW: State for incubation list and selected incubation
+  const [incubationList, setIncubationList] = useState([]);
+  const [selectedIncubation, setSelectedIncubation] = useState(null);
+  const [incubationDetails, setIncubationDetails] = useState(null);
+  const [incubationLoading, setIncubationLoading] = useState(false);
+
   // Create proper setters that update sessionStorage
   const setUserid = (id) => {
     const idString = id ? String(id) : null;
@@ -46,7 +52,9 @@ export const DataProvider = ({ children }) => {
   };
 
   const setincuserid = (id) => {
-    const idString = id ? String(id) : null;
+    // For admin (roleid "0"), incuserid should always be "ALL" by default
+    // But will be overridden when a specific incubation is selected
+    const idString = roleid === "0" ? "ALL" : id ? String(id) : null;
     sessionStorage.setItem("incuserid", idString);
     setincuseridstate(idString);
   };
@@ -78,6 +86,86 @@ export const DataProvider = ({ children }) => {
     return fallback;
   };
 
+  // NEW: Function to fetch incubation list
+  const fetchIncubationList = async () => {
+    try {
+      const response = await api.post("/generic/getincubationlist", {
+        userId: userid,
+        userIncId: "ALL",
+      });
+
+      const data = extractData(response, []);
+      setIncubationList(data);
+
+      // Set default selected incubation if incuserid is available and not "ALL"
+      if (incuserid && incuserid !== "ALL") {
+        const defaultIncubation = data.find(
+          (item) => item.incubationsrecid === parseInt(incuserid)
+        );
+        if (defaultIncubation) {
+          setSelectedIncubation(defaultIncubation);
+        }
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching incubation list:", error);
+      return [];
+    }
+  };
+
+  // NEW: Function to fetch incubation details by ID
+  const fetchIncubationDetails = async (incubationId) => {
+    if (!incubationId) return null;
+
+    setIncubationLoading(true);
+    try {
+      const response = await api.post("/generic/getincubationdetails", {
+        userId: userid,
+        userIncId: incubationId,
+      });
+
+      const data = extractData(response, []);
+      // Find the specific incubation details from the array
+      const details = data.find(
+        (item) => item.incubationsrecid === parseInt(incubationId)
+      );
+      setIncubationDetails(details);
+      return details;
+    } catch (error) {
+      console.error("Error fetching incubation details:", error);
+      return null;
+    } finally {
+      setIncubationLoading(false);
+    }
+  };
+
+  // NEW: Function to handle incubation selection
+  const handleIncubationSelect = async (incubation) => {
+    setSelectedIncubation(incubation);
+
+    // Update incuserid with the selected incubation's recid
+    // This will be used in API calls
+    setincuserid(incubation.incubationsrecid.toString());
+
+    // Fetch the detailed information for the selected incubation
+    await fetchIncubationDetails(incubation.incubationsrecid);
+  };
+
+  // NEW: Function to reset incubation selection
+  const resetIncubationSelection = () => {
+    setSelectedIncubation(null);
+    setIncubationDetails(null);
+
+    // Reset incuserid based on role
+    if (roleid === "0") {
+      setincuserid("ALL");
+    } else {
+      setincuserid(null);
+    }
+  };
+
+  // Add this refresh function for company documents
   // Add this refresh function for company documents
   const refreshCompanyDocuments = async () => {
     try {
@@ -206,22 +294,30 @@ export const DataProvider = ({ children }) => {
 
   // Effect to sync with sessionStorage
   useEffect(() => {
-    const handleStorageChange = (e) => {
-      // Check if the change is for userid or roleid
-      if (e.key === "userid" || e.key === "roleid" || !e.key) {
-        const sessionUserid = sessionStorage.getItem("userid");
-        const sessionRoleid = sessionStorage.getItem("roleid");
-        const sessionIncuserid = sessionStorage.getItem("incuserid");
+    const handleStorageChange = () => {
+      const sessionUserid = sessionStorage.getItem("userid");
+      const sessionRoleid = sessionStorage.getItem("roleid");
+      const sessionIncuserid = sessionStorage.getItem("incuserid");
 
-        if (sessionUserid !== userid) {
-          setUseridState(sessionUserid);
-        }
+      // Just sync with sessionStorage value
+      if (sessionUserid !== userid) {
+        setUseridState(sessionUserid);
+      }
 
-        if (sessionRoleid !== roleid) {
-          setroleidState(sessionRoleid);
+      if (sessionRoleid !== roleid) {
+        setroleidState(sessionRoleid);
+      }
+
+      // Corrected logic for incuserid
+      // If the role in sessionStorage is "0" (admin), state must be "ALL"
+      if (sessionRoleid === "0") {
+        if (incuserid !== "ALL") {
+          setincuseridstate("ALL");
         }
+      } else {
+        // For other roles, sync with sessionStorage value
         if (sessionIncuserid !== incuserid) {
-          setincuserid(incuserid);
+          setincuseridstate(sessionIncuserid);
         }
       }
     };
@@ -230,31 +326,30 @@ export const DataProvider = ({ children }) => {
     window.addEventListener("storage", handleStorageChange);
 
     // Check immediately on mount
-    handleStorageChange(new Event("storage"));
+    handleStorageChange();
 
-    // Set up an interval to check for sessionStorage changes
-    const intervalId = setInterval(() => {
-      const sessionUserid = sessionStorage.getItem("userid");
-      const sessionRoleid = sessionStorage.getItem("roleid");
-      const sessionIncuserid = sessionStorage.getItem("incuserid");
-
-      if (sessionUserid !== userid) {
-        setUseridState(sessionUserid);
-      }
-
-      if (sessionRoleid !== roleid) {
-        setroleidState(sessionRoleid);
-      }
-      if (sessionIncuserid !== incuserid) {
-        setincuserid(incuserid);
-      }
-    }, 500); // Check every 500ms
+    // Set up an interval to check for sessionStorage changes within the same tab
+    const intervalId = setInterval(handleStorageChange, 500);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       clearInterval(intervalId);
     };
   }, [userid, roleid, incuserid]);
+
+  // NEW: Effect to fetch incubation list on component mount
+  useEffect(() => {
+    if (userid) {
+      fetchIncubationList();
+    }
+  }, [userid]);
+
+  // NEW: Effect to fetch incubation details when selected incubation changes
+  useEffect(() => {
+    if (selectedIncubation) {
+      fetchIncubationDetails(selectedIncubation.incubationsrecid);
+    }
+  }, [selectedIncubation]);
 
   // General data fetch (for admin/users)
   useEffect(() => {
@@ -266,38 +361,58 @@ export const DataProvider = ({ children }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Determine userId for different API calls
+        // For stats, field, and stage APIs, use the actual userid
+        const userIdForGeneralApis = userid;
+
+        // Determine the userIncId for API calls
+        // If a specific incubation is selected, use its recid
+        // Otherwise, use the default based on role
+        let userIncId;
+        if (selectedIncubation) {
+          userIncId = selectedIncubation.incubationsrecid.toString();
+        } else if (Number(roleid) === 0 || Number(roleid) === 1) {
+          userIncId = "ALL";
+        } else {
+          userIncId = userid;
+        }
+
+        // For getcollecteddocsdash and getincubatessdash, userId should be "ALL" when roleid is 0 or 1
+        const userIdForListApis =
+          Number(roleid) === 0 || Number(roleid) === 1 ? "ALL" : userid;
+
         // Make API calls individually to handle errors better
         const apiCalls = [
           {
             name: "stats",
             call: () =>
               api.post("/generic/getstatscom", {
-                userId: userid,
-                userIncId: incuserid,
+                userId: userIdForGeneralApis,
+                userIncId: userIncId,
               }),
           },
           {
             name: "field",
             call: () =>
               api.post("/generic/getcombyfield", {
-                userId: userid,
-                userIncId: incuserid,
+                userId: userIdForGeneralApis,
+                userIncId: userIncId,
               }),
           },
           {
             name: "stage",
             call: () =>
               api.post("/generic/getcombystage", {
-                userId: userid,
-                userIncId: incuserid,
+                userId: userIdForGeneralApis,
+                userIncId: userIncId,
               }),
           },
           {
             name: "documents",
             call: () =>
               api.post("/generic/getcollecteddocsdash", {
-                userId: Number(roleid) === 1 ? "ALL" : userid,
-                incUserId: incuserid,
+                userId: userIdForListApis,
+                incUserId: userIncId,
                 startYear: fromYear,
                 endYear: toYear,
               }),
@@ -306,8 +421,8 @@ export const DataProvider = ({ children }) => {
             name: "incubatees",
             call: () =>
               api.post("/generic/getincubatessdash", {
-                userId: Number(roleid) === 1 ? "ALL" : userid,
-                incUserId: incuserid,
+                userId: userIdForListApis,
+                incUserId: userIncId,
               }),
           },
         ];
@@ -400,7 +515,14 @@ export const DataProvider = ({ children }) => {
     };
 
     fetchData();
-  }, [userid, roleid, fromYear, toYear, adminViewingStartupId, incuserid]);
+  }, [
+    userid,
+    roleid,
+    fromYear,
+    toYear,
+    adminViewingStartupId,
+    selectedIncubation,
+  ]);
 
   return (
     <DataContext.Provider
@@ -428,7 +550,7 @@ export const DataProvider = ({ children }) => {
         currentCompanyDetails,
         setCurrentCompanyDetails,
         refreshCompanyDocuments,
-        // New admin functions
+        // Admin functions
         fetchStartupDataForAdmin,
         fetchStartupDataById,
         resetAdminView,
@@ -439,6 +561,15 @@ export const DataProvider = ({ children }) => {
         setadminviewData,
         incuserid,
         setincuserid,
+        // NEW: Incubation functions and state
+        incubationList,
+        selectedIncubation,
+        incubationDetails,
+        incubationLoading,
+        fetchIncubationList,
+        fetchIncubationDetails,
+        handleIncubationSelect,
+        resetIncubationSelection,
       }}
     >
       {children}

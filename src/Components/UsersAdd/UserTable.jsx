@@ -9,6 +9,8 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import "./UserTable.css";
 import { IPAdress } from "../Datafetching/IPAdrees";
@@ -16,7 +18,8 @@ import { IPAdress } from "../Datafetching/IPAdrees";
 export default function UserTable() {
   const userId = sessionStorage.getItem("userid");
   const token = sessionStorage.getItem("token");
-  const incUserid = sessionStorage.getItem("incUserid");
+  const incUserid = sessionStorage.getItem("incuserid");
+  const roleId = sessionStorage.getItem("roleid");
   const IP = IPAdress;
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -24,8 +27,10 @@ export default function UserTable() {
   const [error, setError] = useState(null);
   const [roles, setRoles] = useState([]);
   const [incubatees, setIncubatees] = useState([]);
+  const [incubations, setIncubations] = useState([]);
   const [dropdownsLoading, setDropdownsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIncubation, setSelectedIncubation] = useState(null);
 
   // Sorting states
   const [sortColumn, setSortColumn] = useState("sno");
@@ -33,12 +38,22 @@ export default function UserTable() {
 
   // Loading states for operations
   const [isAdding, setIsAdding] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(null); // Store user ID being updated
-  const [isDeleting, setIsDeleting] = useState(null); // Store user ID being deleted
+  const [isUpdating, setIsUpdating] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   // Define the role IDs that are allowed to select an incubatee
-  // Change these IDs if they are different in your system
-  const INCUBATEE_ROLE_IDS = [4, 5, 6]; // Assuming IDs for incubateeadmin, incubateemanager, incubateeoperator
+  const INCUBATEE_ROLE_IDS = [4, 5, 6];
+  const rolebaseincuserid = roleId === "0" ? 1 : incUserid;
+
+  // Check if current user can select incubation (only when roleId is 0)
+  const canSelectIncubation = roleId === "0";
+
+  // Check if incubatee dropdown should be enabled
+  const isIncubateeEnabled = selectedIncubation !== null;
 
   // Function to map role ID to the correct role name
   const getRoleName = (roleId) => {
@@ -144,6 +159,54 @@ export default function UserTable() {
     });
   }, [filteredUsers, sortColumn, sortDirection]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentData = sortedUsers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters or sorting change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortColumn, sortDirection]);
+
+  // Pagination helper
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push("...");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
+  };
+
   // Function to get the appropriate sort icon for a column
   const getSortIcon = (column) => {
     if (sortColumn !== column) {
@@ -156,7 +219,7 @@ export default function UserTable() {
     );
   };
 
-  // ✅ Fetch all users
+  // Fetch all users
   const fetchUsers = () => {
     setLoading(true);
     setError(null);
@@ -169,7 +232,9 @@ export default function UserTable() {
       },
       body: JSON.stringify({
         userId: userId || null,
-        userIncId: incUserid,
+        userIncId: selectedIncubation
+          ? selectedIncubation.incubationsrecid
+          : incUserid,
       }),
     })
       .then((res) => res.json())
@@ -188,7 +253,7 @@ export default function UserTable() {
       .finally(() => setLoading(false));
   };
 
-  // ✅ Fetch roles for dropdown
+  // Fetch roles for dropdown
   const fetchRoles = () => {
     return fetch(`${IP}/itelinc/resources/generic/getrolelist`, {
       method: "POST",
@@ -199,7 +264,9 @@ export default function UserTable() {
       },
       body: JSON.stringify({
         userId: userId || null,
-        incUserId: incUserid,
+        incUserId: selectedIncubation
+          ? selectedIncubation.incubationsrecid
+          : incUserid,
       }),
     })
       .then((res) => res.json())
@@ -223,8 +290,13 @@ export default function UserTable() {
       });
   };
 
-  // ✅ Fetch incubatees for dropdown
-  const fetchIncubatees = () => {
+  // Fetch incubatees for dropdown
+  const fetchIncubatees = (incubationId = null) => {
+    // Use the provided incubationId or the selectedIncubation
+    const targetIncubationId =
+      incubationId ||
+      (selectedIncubation ? selectedIncubation.incubationsrecid : incUserid);
+
     return fetch(`${IP}/itelinc/resources/generic/getinclist`, {
       method: "POST",
       mode: "cors",
@@ -234,7 +306,7 @@ export default function UserTable() {
       },
       body: JSON.stringify({
         userId: userId || null,
-        incUserId: incUserid,
+        incUserId: targetIncubationId,
       }),
     })
       .then((res) => res.json())
@@ -253,17 +325,70 @@ export default function UserTable() {
       });
   };
 
-  // ✅ Fetch all required data
+  // Fetch incubations for dropdown (only if roleId is 0)
+  const fetchIncubations = () => {
+    if (!canSelectIncubation) {
+      // If roleId is not 0, we don't need to fetch incubations
+      return Promise.resolve([]);
+    }
+
+    return fetch(`${IP}/itelinc/resources/generic/getincubationlist`, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: userId || null,
+        userIncId: "ALL", // Use "ALL" to get all incubations
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.statusCode === 200) {
+          setIncubations(data.data || []);
+          return data.data || [];
+        } else {
+          throw new Error(data.message || "Failed to fetch incubations");
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching incubations:", err);
+        Swal.fire("❌ Error", "Failed to load incubations", "error");
+        return [];
+      });
+  };
+
+  // Fetch all required data
   useEffect(() => {
     fetchUsers();
     // Load dropdown data on component mount
     setDropdownsLoading(true);
-    Promise.all([fetchRoles(), fetchIncubatees()])
+    Promise.all([fetchRoles(), fetchIncubatees(), fetchIncubations()])
       .then(() => setDropdownsLoading(false))
       .catch(() => setDropdownsLoading(false));
   }, []);
 
-  // ✅ Delete user
+  // Refetch data when selectedIncubation changes
+  useEffect(() => {
+    // Fetch users and roles when selectedIncubation changes
+    fetchUsers();
+    fetchRoles();
+
+    // Fetch incubatees only when an incubation is selected
+    if (selectedIncubation) {
+      setDropdownsLoading(true);
+      fetchIncubatees()
+        .then(() => setDropdownsLoading(false))
+        .catch(() => setDropdownsLoading(false));
+    } else {
+      // Clear incubatees when no incubation is selected
+      setIncubatees([]);
+    }
+  }, [selectedIncubation]);
+
+  // Delete user
   const handleDelete = (user) => {
     Swal.fire({
       title: "Are you sure?",
@@ -317,10 +442,14 @@ export default function UserTable() {
     });
   };
 
-  // ✅ Add new user
+  // Add new user
   const handleAddUser = async () => {
     // Check if dropdown data is loaded, if not, wait for it
-    if (dropdownsLoading || roles.length === 0) {
+    if (
+      dropdownsLoading ||
+      roles.length === 0 ||
+      (canSelectIncubation && incubations.length === 0)
+    ) {
       Swal.fire({
         title: "Loading...",
         text: "Please wait while we load the required data",
@@ -331,7 +460,11 @@ export default function UserTable() {
       });
 
       try {
-        await Promise.all([fetchRoles(), fetchIncubatees()]);
+        await Promise.all([
+          fetchRoles(),
+          fetchIncubatees(),
+          fetchIncubations(),
+        ]);
         setDropdownsLoading(false);
         Swal.close();
       } catch (error) {
@@ -345,6 +478,17 @@ export default function UserTable() {
     const roleOptions = roles
       .map((role) => `<option value="${role.value}">${role.text}</option>`)
       .join("");
+
+    // Create incubation dropdown HTML with "Select incubation" as placeholder (only if roleId is 0)
+    const incubationOptions = canSelectIncubation
+      ? [
+          `<option value="" disabled selected>Select incubation</option>`,
+          ...incubations.map(
+            (incubation) =>
+              `<option value="${incubation.incubationsrecid}">${incubation.incubationshortname}</option>`
+          ),
+        ].join("")
+      : "";
 
     // Create incubatee dropdown HTML with "Select incubatee" as placeholder
     const incubateeOptions = [
@@ -374,6 +518,17 @@ export default function UserTable() {
               ${roleOptions}
             </select>
           </div>
+          ${
+            canSelectIncubation
+              ? `
+          <div class="swal-form-row">
+            <select id="swal-incubation" class="swal2-select" required>
+              ${incubationOptions}
+            </select>
+          </div>
+          `
+              : ""
+          }
           <div class="swal-form-row">
             <select id="swal-incubatee" class="swal2-select" disabled>
               ${incubateeOptions}
@@ -389,14 +544,30 @@ export default function UserTable() {
         const email = document.getElementById("swal-email");
         const password = document.getElementById("swal-password");
         const role = document.getElementById("swal-role");
+        const incubation = canSelectIncubation
+          ? document.getElementById("swal-incubation")
+          : null;
         const incubatee = document.getElementById("swal-incubatee");
 
-        if (!name || !email || !password || !role || !incubatee) {
+        if (
+          !name ||
+          !email ||
+          !password ||
+          !role ||
+          !incubatee ||
+          (canSelectIncubation && !incubation)
+        ) {
           Swal.showValidationMessage("Form elements not found");
           return false;
         }
 
-        if (!name.value || !email.value || !password.value || !role.value) {
+        if (
+          !name.value ||
+          !email.value ||
+          !password.value ||
+          !role.value ||
+          (canSelectIncubation && !incubation.value)
+        ) {
           Swal.showValidationMessage("Please fill all required fields");
           return false;
         }
@@ -406,7 +577,12 @@ export default function UserTable() {
           usersemail: email.value,
           userspassword: password.value,
           usersrolesrecid: role.value,
-          usersincubateesrecid: incubatee.value || null, // Send null if nothing is selected
+          usersincubationsrecid: canSelectIncubation
+            ? incubation.value
+            : selectedIncubation
+            ? selectedIncubation.incubationsrecid
+            : incUserid,
+          usersincubateesrecid: incubatee.value || null,
         };
       },
       didOpen: () => {
@@ -436,14 +612,79 @@ export default function UserTable() {
         `;
         document.head.appendChild(style);
 
-        // Add event listener to role dropdown to enable/disable incubatee dropdown
+        // Get form elements
         const roleSelect = document.getElementById("swal-role");
         const incubateeSelect = document.getElementById("swal-incubatee");
+        const incubationSelect = canSelectIncubation
+          ? document.getElementById("swal-incubation")
+          : null;
+
+        // Function to update incubatee dropdown options
+        const updateIncubateeOptions = (incubationId) => {
+          if (!incubationId) {
+            incubateeSelect.innerHTML =
+              '<option value="" disabled selected>Select incubatee</option>';
+            return;
+          }
+
+          // Show loading state
+          incubateeSelect.innerHTML =
+            '<option value="" disabled>Loading incubatees...</option>';
+          incubateeSelect.disabled = true;
+
+          // Fetch incubatees for the selected incubation
+          fetch(`${IP}/itelinc/resources/generic/getinclist`, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: userId || null,
+              incUserId: incubationId,
+            }),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.statusCode === 200) {
+                const incubateeOptions = [
+                  '<option value="" disabled selected>Select incubatee</option>',
+                  ...(data.data || []).map(
+                    (incubatee) =>
+                      `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`
+                  ),
+                ].join("");
+                incubateeSelect.innerHTML = incubateeOptions;
+              } else {
+                incubateeSelect.innerHTML =
+                  '<option value="" disabled>No incubatees found</option>';
+              }
+            })
+            .catch((err) => {
+              console.error("Error fetching incubatees:", err);
+              incubateeSelect.innerHTML =
+                '<option value="" disabled>Error loading incubatees</option>';
+            });
+        };
 
         const toggleIncubateeDropdown = () => {
           const selectedRole = parseInt(roleSelect.value);
-          // Enable incubatee dropdown if role ID is in the allowed list
-          if (INCUBATEE_ROLE_IDS.includes(selectedRole)) {
+
+          // For users with roleId === 0, check if incubation is selected
+          // For other users, just check if the role allows selecting an incubatee
+          const shouldEnableIncubatee = canSelectIncubation
+            ? incubationSelect && incubationSelect.value !== ""
+            : INCUBATEE_ROLE_IDS.includes(selectedRole);
+
+          if (shouldEnableIncubatee) {
+            // Update incubatee options based on selected incubation
+            if (canSelectIncubation && incubationSelect) {
+              updateIncubateeOptions(incubationSelect.value);
+            } else {
+              // For non-admin users, use their incUserid
+              updateIncubateeOptions(incUserid);
+            }
             incubateeSelect.disabled = false;
           } else {
             incubateeSelect.disabled = true;
@@ -451,7 +692,20 @@ export default function UserTable() {
           }
         };
 
+        // Add event listeners
         roleSelect.addEventListener("change", toggleIncubateeDropdown);
+
+        // Add event listener to incubation dropdown if it exists
+        if (incubationSelect) {
+          incubationSelect.addEventListener("change", () => {
+            const selectedRole = parseInt(roleSelect.value);
+            if (INCUBATEE_ROLE_IDS.includes(selectedRole)) {
+              updateIncubateeOptions(incubationSelect.value);
+              incubateeSelect.disabled = false;
+            }
+          });
+        }
+
         // Initial check
         toggleIncubateeDropdown();
       },
@@ -469,7 +723,7 @@ export default function UserTable() {
         params.append("usersadminstate", "1");
         params.append("userscreatedby", userId || "system");
         params.append("usersmodifiedby", userId || "system");
-        params.append("usersincubationsrecid", incUserid);
+        params.append("usersincubationsrecid", formData.usersincubationsrecid);
 
         // Only add incubateesrecid if it's not null or empty
         if (formData.usersincubateesrecid) {
@@ -529,10 +783,15 @@ export default function UserTable() {
     });
   };
 
-  // ✅ Edit user with popup form
+  // Edit user with popup form
   const handleEdit = async (user) => {
     // Check if dropdown data is loaded, if not, wait for it
-    if (dropdownsLoading || roles.length === 0 || incubatees.length === 0) {
+    if (
+      dropdownsLoading ||
+      roles.length === 0 ||
+      incubatees.length === 0 ||
+      (canSelectIncubation && incubations.length === 0)
+    ) {
       Swal.fire({
         title: "Loading...",
         text: "Please wait while we load the required data",
@@ -543,7 +802,11 @@ export default function UserTable() {
       });
 
       try {
-        await Promise.all([fetchRoles(), fetchIncubatees()]);
+        await Promise.all([
+          fetchRoles(),
+          fetchIncubatees(),
+          fetchIncubations(),
+        ]);
         setDropdownsLoading(false);
         Swal.close();
       } catch (error) {
@@ -562,6 +825,23 @@ export default function UserTable() {
           }>${role.text}</option>`
       )
       .join("");
+
+    // Create incubation dropdown HTML with "Select incubation" as placeholder (only if roleId is 0)
+    const incubationOptions = canSelectIncubation
+      ? [
+          `<option value="" ${
+            !user.usersincubationsrecid ? "selected" : ""
+          }>Select incubation</option>`,
+          ...incubations.map(
+            (incubation) =>
+              `<option value="${incubation.incubationsrecid}" ${
+                user.usersincubationsrecid == incubation.incubationsrecid
+                  ? "selected"
+                  : ""
+              }>${incubation.incubationshortname}</option>`
+          ),
+        ].join("")
+      : "";
 
     // Create incubatee dropdown HTML with "Select incubatee" as placeholder
     const incubateeOptions = [
@@ -602,6 +882,17 @@ export default function UserTable() {
               ${roleOptions}
             </select>
           </div>
+          ${
+            canSelectIncubation
+              ? `
+          <div class="swal-form-row">
+            <select id="swal-incubation" class="swal2-select">
+              ${incubationOptions}
+            </select>
+          </div>
+          `
+              : ""
+          }
           <div class="swal-form-row">
             <select id="swal-incubatee" class="swal2-select" ${
               !INCUBATEE_ROLE_IDS.includes(parseInt(user.usersrolesrecid))
@@ -613,7 +904,7 @@ export default function UserTable() {
           </div>
         </div>
       `,
-      width: "600px", // Make the popup wider
+      width: "600px",
       focusConfirm: false,
       showCancelButton: true,
       preConfirm: () => {
@@ -622,10 +913,20 @@ export default function UserTable() {
         const email = document.getElementById("swal-email");
         const password = document.getElementById("swal-password");
         const role = document.getElementById("swal-role");
+        const incubation = canSelectIncubation
+          ? document.getElementById("swal-incubation")
+          : null;
         const incubatee = document.getElementById("swal-incubatee");
 
         // Validate that all elements exist
-        if (!name || !email || !password || !role || !incubatee) {
+        if (
+          !name ||
+          !email ||
+          !password ||
+          !role ||
+          !incubatee ||
+          (canSelectIncubation && !incubation)
+        ) {
           Swal.showValidationMessage("Form elements not found");
           return false;
         }
@@ -633,9 +934,14 @@ export default function UserTable() {
         return {
           usersname: name.value,
           usersemail: email.value,
-          userspassword: password.value, // Password is included but not editable
+          userspassword: password.value,
           usersrolesrecid: role.value,
-          usersincubateesrecid: incubatee.value || null, // Send null if nothing is selected
+          usersincubationsrecid: canSelectIncubation
+            ? incubation.value
+            : selectedIncubation
+            ? selectedIncubation.incubationsrecid
+            : incUserid,
+          usersincubateesrecid: incubatee.value || null,
         };
       },
       didOpen: () => {
@@ -670,14 +976,79 @@ export default function UserTable() {
         `;
         document.head.appendChild(style);
 
-        // Add event listener to role dropdown to enable/disable incubatee dropdown
+        // Get form elements
         const roleSelect = document.getElementById("swal-role");
         const incubateeSelect = document.getElementById("swal-incubatee");
+        const incubationSelect = canSelectIncubation
+          ? document.getElementById("swal-incubation")
+          : null;
+
+        // Function to update incubatee dropdown options
+        const updateIncubateeOptions = (incubationId) => {
+          if (!incubationId) {
+            incubateeSelect.innerHTML =
+              '<option value="" disabled selected>Select incubatee</option>';
+            return;
+          }
+
+          // Show loading state
+          incubateeSelect.innerHTML =
+            '<option value="" disabled>Loading incubatees...</option>';
+          incubateeSelect.disabled = true;
+
+          // Fetch incubatees for the selected incubation
+          fetch(`${IP}/itelinc/resources/generic/getinclist`, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: userId || null,
+              incUserId: incubationId,
+            }),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.statusCode === 200) {
+                const incubateeOptions = [
+                  '<option value="" disabled selected>Select incubatee</option>',
+                  ...(data.data || []).map(
+                    (incubatee) =>
+                      `<option value="${incubatee.incubateesrecid}">${incubatee.incubateesname}</option>`
+                  ),
+                ].join("");
+                incubateeSelect.innerHTML = incubateeOptions;
+              } else {
+                incubateeSelect.innerHTML =
+                  '<option value="" disabled>No incubatees found</option>';
+              }
+            })
+            .catch((err) => {
+              console.error("Error fetching incubatees:", err);
+              incubateeSelect.innerHTML =
+                '<option value="" disabled>Error loading incubatees</option>';
+            });
+        };
 
         const toggleIncubateeDropdown = () => {
           const selectedRole = parseInt(roleSelect.value);
-          // Enable incubatee dropdown if role ID is in the allowed list
-          if (INCUBATEE_ROLE_IDS.includes(selectedRole)) {
+
+          // For users with roleId === 0, check if incubation is selected
+          // For other users, just check if the role allows selecting an incubatee
+          const shouldEnableIncubatee = canSelectIncubation
+            ? incubationSelect && incubationSelect.value !== ""
+            : INCUBATEE_ROLE_IDS.includes(selectedRole);
+
+          if (shouldEnableIncubatee) {
+            // Update incubatee options based on selected incubation
+            if (canSelectIncubation && incubationSelect) {
+              updateIncubateeOptions(incubationSelect.value);
+            } else {
+              // For non-admin users, use their incUserid
+              updateIncubateeOptions(incUserid);
+            }
             incubateeSelect.disabled = false;
           } else {
             incubateeSelect.disabled = true;
@@ -685,7 +1056,20 @@ export default function UserTable() {
           }
         };
 
+        // Add event listeners
         roleSelect.addEventListener("change", toggleIncubateeDropdown);
+
+        // Add event listener to incubation dropdown if it exists
+        if (incubationSelect) {
+          incubationSelect.addEventListener("change", () => {
+            const selectedRole = parseInt(roleSelect.value);
+            if (INCUBATEE_ROLE_IDS.includes(selectedRole)) {
+              updateIncubateeOptions(incubationSelect.value);
+              incubateeSelect.disabled = false;
+            }
+          });
+        }
+
         // Initial check
         toggleIncubateeDropdown();
       },
@@ -694,16 +1078,16 @@ export default function UserTable() {
         const formData = result.value;
         setIsUpdating(user.usersrecid);
 
-        // ✅ Build URL with query parameters
+        // Build URL with query parameters
         const params = new URLSearchParams();
         params.append("usersemail", formData.usersemail);
         params.append("usersname", formData.usersname);
         params.append("usersrolesrecid", formData.usersrolesrecid);
-        params.append("userspassword", formData.userspassword); // Always include the password
+        params.append("userspassword", formData.userspassword);
         params.append("usersadminstate", "1");
         params.append("usersmodifiedby", userId);
         params.append("usersrecid", user.usersrecid);
-        params.append("usersincubationsrecid", incUserid);
+        params.append("usersincubationsrecid", formData.usersincubationsrecid);
 
         // Only add incubateesrecid if it's not null or empty
         if (formData.usersincubateesrecid) {
@@ -764,6 +1148,11 @@ export default function UserTable() {
     setSearchQuery("");
   };
 
+  // Function to handle incubation selection
+  const handleIncubationSelect = (incubation) => {
+    setSelectedIncubation(incubation);
+  };
+
   return (
     <div className="doccat-container">
       <div className="doccat-header">
@@ -807,125 +1196,189 @@ export default function UserTable() {
       {loading ? (
         <p className="doccat-empty">Loading users...</p>
       ) : (
-        <div className="doccat-table-wrapper">
-          <table className="doccat-table">
-            <thead>
-              <tr>
-                <th
-                  className="sortable-header"
-                  onClick={() => handleSort("sno")}
-                >
-                  S.No {getSortIcon("sno")}
-                </th>
-                <th
-                  className="sortable-header"
-                  onClick={() => handleSort("usersname")}
-                >
-                  Name {getSortIcon("usersname")}
-                </th>
-                <th
-                  className="sortable-header"
-                  onClick={() => handleSort("usersemail")}
-                >
-                  Email {getSortIcon("usersemail")}
-                </th>
-                <th
-                  className="sortable-header"
-                  onClick={() => handleSort("usersrolesrecid")}
-                >
-                  Role Name {getSortIcon("usersrolesrecid")}
-                </th>
-                <th
-                  className="sortable-header"
-                  onClick={() => handleSort("userscreatedtime")}
-                >
-                  Created Time {getSortIcon("userscreatedtime")}
-                </th>
-                <th
-                  className="sortable-header"
-                  onClick={() => handleSort("usersmodifiedtime")}
-                >
-                  Modified Time {getSortIcon("usersmodifiedtime")}
-                </th>
-                <th
-                  className="sortable-header"
-                  onClick={() => handleSort("userscreatedby")}
-                >
-                  Created By {getSortIcon("userscreatedby")}
-                </th>
-                <th
-                  className="sortable-header"
-                  onClick={() => handleSort("usersmodifiedby")}
-                >
-                  Modified By {getSortIcon("usersmodifiedby")}
-                </th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedUsers.length > 0 ? (
-                sortedUsers.map((user, idx) => (
-                  <tr key={user.usersrecid || idx}>
-                    <td>{users.indexOf(user) + 1}</td>
-                    <td>{user.usersname}</td>
-                    <td>{user.usersemail}</td>
-                    <td>{getRoleName(user.usersrolesrecid)}</td>
-                    <td>{user.userscreatedtime?.replace("T", " ")}</td>
-                    <td>{user.usersmodifiedtime?.replace("T", " ")}</td>
-                    <td>{user.userscreatedby}</td>
-                    <td>{user.usersmodifiedby}</td>
-                    <td>
-                      <button
-                        className="btn-edit"
-                        onClick={() => handleEdit(user)}
-                        disabled={
-                          isUpdating === user.usersrecid ||
-                          isDeleting === user.usersrecid
-                        }
-                      >
-                        {isUpdating === user.usersrecid ? (
-                          <FaSpinner className="spinner" size={18} />
-                        ) : (
-                          <FaEdit size={18} />
-                        )}
-                      </button>
-                      <button
-                        className={`btn-delete ${
-                          shouldDisableDelete(user) ? "disabled" : ""
-                        }`}
-                        onClick={() => handleDelete(user)}
-                        disabled={
-                          isDeleting === user.usersrecid ||
-                          isUpdating === user.usersrecid ||
-                          shouldDisableDelete(user)
-                        }
-                        title={
-                          shouldDisableDelete(user)
-                            ? "Cannot delete users with role ID 1 or 4"
-                            : ""
-                        }
-                      >
-                        {isDeleting === user.usersrecid ? (
-                          <FaSpinner className="spinner" size={18} />
-                        ) : (
-                          <FaTrash size={18} />
-                        )}
-                      </button>
+        <>
+          <div className="table-info">
+            Showing {startIndex + 1} to {Math.min(endIndex, sortedUsers.length)}{" "}
+            of {sortedUsers.length} entries
+          </div>
+          <div className="doccat-table-wrapper">
+            <table className="doccat-table">
+              <thead>
+                <tr>
+                  <th
+                    className="sortable-header"
+                    onClick={() => handleSort("sno")}
+                  >
+                    S.No {getSortIcon("sno")}
+                  </th>
+                  <th
+                    className="sortable-header"
+                    onClick={() => handleSort("usersname")}
+                  >
+                    Name {getSortIcon("usersname")}
+                  </th>
+                  <th
+                    className="sortable-header"
+                    onClick={() => handleSort("usersemail")}
+                  >
+                    Email {getSortIcon("usersemail")}
+                  </th>
+                  <th
+                    className="sortable-header"
+                    onClick={() => handleSort("usersrolesrecid")}
+                  >
+                    Role Name {getSortIcon("usersrolesrecid")}
+                  </th>
+                  <th
+                    className="sortable-header"
+                    onClick={() => handleSort("userscreatedtime")}
+                  >
+                    Created Time {getSortIcon("userscreatedtime")}
+                  </th>
+                  <th
+                    className="sortable-header"
+                    onClick={() => handleSort("usersmodifiedtime")}
+                  >
+                    Modified Time {getSortIcon("usersmodifiedtime")}
+                  </th>
+                  <th
+                    className="sortable-header"
+                    onClick={() => handleSort("userscreatedby")}
+                  >
+                    Created By {getSortIcon("userscreatedby")}
+                  </th>
+                  <th
+                    className="sortable-header"
+                    onClick={() => handleSort("usersmodifiedby")}
+                  >
+                    Modified By {getSortIcon("usersmodifiedby")}
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentData.length > 0 ? (
+                  currentData.map((user, idx) => (
+                    <tr key={user.usersrecid || idx}>
+                      <td>{sortedUsers.indexOf(user) + 1}</td>
+                      <td>{user.usersname}</td>
+                      <td>{user.usersemail}</td>
+                      <td>{getRoleName(user.usersrolesrecid)}</td>
+                      <td>{user.userscreatedtime?.replace("T", " ")}</td>
+                      <td>{user.usersmodifiedtime?.replace("T", " ")}</td>
+                      <td>{user.userscreatedby}</td>
+                      <td>{user.usersmodifiedby}</td>
+                      <td>
+                        <button
+                          className="btn-edit"
+                          onClick={() => handleEdit(user)}
+                          disabled={
+                            isUpdating === user.usersrecid ||
+                            isDeleting === user.usersrecid
+                          }
+                        >
+                          {isUpdating === user.usersrecid ? (
+                            <FaSpinner className="spinner" size={18} />
+                          ) : (
+                            <FaEdit size={18} />
+                          )}
+                        </button>
+                        <button
+                          className={`btn-delete ${
+                            shouldDisableDelete(user) ? "disabled" : ""
+                          }`}
+                          onClick={() => handleDelete(user)}
+                          disabled={
+                            isDeleting === user.usersrecid ||
+                            isUpdating === user.usersrecid ||
+                            shouldDisableDelete(user)
+                          }
+                          title={
+                            shouldDisableDelete(user)
+                              ? "Cannot delete users with role ID 1 or 4"
+                              : ""
+                          }
+                        >
+                          {isDeleting === user.usersrecid ? (
+                            <FaSpinner className="spinner" size={18} />
+                          ) : (
+                            <FaTrash size={18} />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="9" className="doccat-empty">
+                      {searchQuery
+                        ? "No users found matching your search"
+                        : "No users found"}
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="9" className="doccat-empty">
-                    {searchQuery
-                      ? "No users found matching your search"
-                      : "No users found"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="pagination-container">
+              <div className="pagination-info">
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) =>
+                    handleItemsPerPageChange(Number(e.target.value))
+                  }
+                  className="items-per-page-select"
+                >
+                  <option value="5">5 per page</option>
+                  <option value="10">10 per page</option>
+                  <option value="25">25 per page</option>
+                  <option value="50">50 per page</option>
+                </select>
+              </div>
+              <div className="pagination">
+                <button
+                  className={`pagination-btn ${
+                    currentPage === 1 ? "disabled" : ""
+                  }`}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <FaChevronLeft />
+                </button>
+
+                {getPageNumbers().map((page, index) => (
+                  <React.Fragment key={index}>
+                    {page === "..." ? (
+                      <span className="pagination-ellipsis">...</span>
+                    ) : (
+                      <button
+                        className={`pagination-btn page-number ${
+                          currentPage === page ? "active" : ""
+                        }`}
+                        onClick={() => handlePageChange(page)}
+                      >
+                        {page}
+                      </button>
+                    )}
+                  </React.Fragment>
+                ))}
+
+                <button
+                  className={`pagination-btn ${
+                    currentPage === totalPages ? "disabled" : ""
+                  }`}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <FaChevronRight />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Loading overlay for operations */}

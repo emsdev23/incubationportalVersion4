@@ -11,7 +11,7 @@ import Swal from "sweetalert2";
 import { IPAdress } from "../Datafetching/IPAdrees";
 
 const DDIDocumentUploadModal = () => {
-  const incUserid = sessionStorage.getItem("incUserid");
+  const incUserid = sessionStorage.getItem("incuserid");
   const [userid, setUserid] = useState(null);
   const [roleid, setRoleid] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState("");

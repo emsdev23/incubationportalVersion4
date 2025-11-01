@@ -3,7 +3,8 @@ import ReactApexChart from "react-apexcharts";
 import styles from "./FundingStageChart.module.css";
 
 const FundingStageChart = ({ byStage }) => {
-  if (!byStage || byStage.length === 0) return <p>No data available</p>;
+  // if (!byStage || byStage.length === 0) return <p>No data available</p>;
+  if (!byStage || byStage.length === 0) return <p></p>;
 
   // ✅ Define desired order
   const stageOrder = [

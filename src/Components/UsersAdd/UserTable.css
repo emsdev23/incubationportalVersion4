@@ -1,7 +1,7 @@
 /* Container */
 .doccat-container {
   padding: 1.5rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   position: relative;
 }
 
@@ -168,8 +168,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Loading state for buttons */
@@ -359,7 +363,8 @@
   align-items: center;
   z-index: 2000;
   min-width: 300px;
-  animation: slideInRight 0.3s ease-out, slideOutRight 0.3s ease-in 2.7s forwards;
+  animation: slideInRight 0.3s ease-out,
+    slideOutRight 0.3s ease-in 2.7s forwards;
 }
 
 .toast-notification.success {
@@ -445,37 +450,37 @@
   .doccat-container {
     padding: 1rem;
   }
-  
+
   .doccat-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .doccat-table-wrapper {
     border-radius: 0;
   }
-  
+
   .doccat-table th,
   .doccat-table td {
     padding: 0.5rem;
   }
-  
+
   .doccat-actions {
     flex-direction: column;
     gap: 0.25rem;
   }
-  
+
   .btn-edit,
   .btn-delete {
     width: 100%;
   }
-  
+
   .doccat-modal-content {
     width: 95%;
     padding: 1rem;
   }
-  
+
   .toast-notification {
     left: 10px;
     right: 10px;
@@ -487,7 +492,7 @@
   .doccat-table-wrapper {
     overflow-x: scroll;
   }
-  
+
   .doccat-table {
     min-width: 600px;
   }
@@ -561,4 +566,75 @@
 
 .sort-icon.active {
   color: #007bff;
+}
+
+/* peginatio css */
+
+/* Pagination styles */
+.table-info {
+  margin: 10px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+}
+
+.items-per-page-select {
+  padding: 5px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 14px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(.disabled) {
+  background-color: #f5f5f5;
+}
+
+.pagination-btn.active {
+  background-color: #4f46e5;
+  color: white;
+  border-color: #4f46e5;
+}
+
+.pagination-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+  padding: 0 8px;
+  color: #666;
 }

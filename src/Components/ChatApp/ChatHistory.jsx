@@ -481,6 +481,15 @@ const ChatHistory = ({ currentUser: propCurrentUser }) => {
                     </th>
                     <th
                       className="sortable-header"
+                      onClick={() => requestSort("chatlistchatstate")}
+                    >
+                      <div className="header-content">
+                        Status
+                        {getSortIcon("chatlistchatstate")}
+                      </div>
+                    </th>
+                    <th
+                      className="sortable-header"
                       onClick={() => requestSort("chatdetailsattachmentpath")}
                     >
                       <div className="header-content">
@@ -511,6 +520,7 @@ const ChatHistory = ({ currentUser: propCurrentUser }) => {
                         </div>
                       </td>
                       <td>{formatDate(message.chatdetailscreatedtime)}</td>
+                      <td>{message.chatlistchatstate}</td>
                       <td>
                         {message.chatdetailsattachmentpath ? (
                           <div className="attachment-indicator">

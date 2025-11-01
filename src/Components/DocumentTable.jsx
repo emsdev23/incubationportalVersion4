@@ -8,6 +8,7 @@ import Swal from "sweetalert2";
 import style from "../Components/StartupDashboard/StartupDashboard.module.css";
 import * as XLSX from "xlsx"; // Add this import for Excel export
 import { IPAdress } from "./Datafetching/IPAdrees";
+import { Download } from "lucide-react";
 
 export default function DocumentTable() {
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -491,6 +492,7 @@ export default function DocumentTable() {
             onClick={exportToCSV}
             title="Export as CSV"
           >
+            <Download size={16} />
             Export CSV
           </button>
           <button
@@ -503,6 +505,7 @@ export default function DocumentTable() {
             }
             disabled={!isXLSXAvailable}
           >
+            <Download size={16} />
             Export Excel
           </button>
         </div>

@@ -5,10 +5,11 @@ import Swal from "sweetalert2";
 import style from "../StartupDashboard/StartupDashboard.module.css";
 import * as XLSX from "xlsx"; // Add this import for Excel export
 import { IPAdress } from "../Datafetching/IPAdrees";
+import { Download } from "lucide-react";
 
 export default function DDIDocumentsTable({ userRecID = "ALL" }) {
   const roleid = sessionStorage.getItem("roleid");
-  const incUserid = sessionStorage.getItem("incUserid");
+  const incUserid = sessionStorage.getItem("incuserid");
   const usersrecid = roleid === 7 ? "ALL" : userRecID;
   console.log("User Rec ID:", usersrecid);
   console.log(userRecID);
@@ -523,6 +524,7 @@ export default function DDIDocumentsTable({ userRecID = "ALL" }) {
             onClick={exportToCSV}
             title="Export as CSV"
           >
+            <Download size={16} />
             Export CSV
           </button>
           <button
@@ -535,6 +537,7 @@ export default function DDIDocumentsTable({ userRecID = "ALL" }) {
             }
             disabled={!isXLSXAvailable}
           >
+            <Download size={16} />
             Export Excel
           </button>
         </div>

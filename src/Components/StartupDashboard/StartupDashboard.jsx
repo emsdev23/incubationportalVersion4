@@ -11,6 +11,7 @@ import { HiLink } from "react-icons/hi";
 import { Link } from "react-router-dom";
 import Spinner from "../../Components/Spinner";
 import style from "../Navbar.module.css";
+import { Download } from "lucide-react";
 import {
   CheckCircle,
   Clock,
@@ -503,6 +504,7 @@ const StartupDashboard = () => {
   };
 
   const handleViewDocument = async (filepath) => {
+    console.log(filepath);
     try {
       const token = sessionStorage.getItem("token");
       const userid = sessionStorage.getItem("userid");
@@ -552,7 +554,7 @@ const StartupDashboard = () => {
             if (result.isConfirmed) {
               const link = document.createElement("a");
               link.href = fileUrl;
-              link.download = filepath.split("/").pop();
+              link.download = filepath.split("/").pop(); // use original filename
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
@@ -571,7 +573,6 @@ const StartupDashboard = () => {
       });
     }
   };
-
   const handleLogout = async () => {
     // Step 1️⃣: Ask for confirmation
     const confirmResult = await Swal.fire({
@@ -645,7 +646,7 @@ const StartupDashboard = () => {
         sessionStorage.removeItem("userid");
         sessionStorage.removeItem("token");
         sessionStorage.removeItem("roleid");
-        sessionStorage.removeItem("incUserid");
+        sessionStorage.removeItem("incuserid");
 
         // Swal.fire({
         //   icon: "success",
@@ -881,11 +882,13 @@ const StartupDashboard = () => {
             )}
 
             {/* Contact Modal */}
-            {isContactModalOpen && Number(roleid) === 4 && (
+            {isContactModalOpen && (
+              // && Number(roleid) === 4
               <ContactModal
                 isOpen={isContactModalOpen}
                 onClose={() => setIsContactModalOpen(false)}
                 userId={Number(userid)}
+                incuserid={incuserid}
               />
             )}
           </div>
@@ -954,29 +957,15 @@ const StartupDashboard = () => {
                   <div className={styles.headerBadge}>
                     Field Of Work: {incubateesfieldofworkname}
                   </div>
-                  {Number(roleid) === 4 && (
-                    <div
-                      className={styles.headerBadge}
-                      onClick={() => setIsContactModalOpen(true)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <Mail className="h-4 w-4" />
-                      Contact
-                      {/* <button
-                        className={style.btnPrimary}
-                       
-                        style={{
-                          background: "#3b82f6",
-                          fontWeight: "bold",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                        }}
-                      >
-                        
-                      </button> */}
-                    </div>
-                  )}
+                  {/* {Number(roleid) === 4 && ( )} */}
+                  <div
+                    className={styles.headerBadge}
+                    onClick={() => setIsContactModalOpen(true)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <Mail className="h-4 w-4" />
+                    Contact
+                  </div>
                 </div>
               </div>
             </div>
@@ -1143,6 +1132,7 @@ const StartupDashboard = () => {
               onClick={exportToCSV}
               title="Export as CSV"
             >
+              <Download size={16} />
               Export CSV
             </button>
             <button
@@ -1157,6 +1147,7 @@ const StartupDashboard = () => {
               }
               disabled={!isXLSXAvailable}
             >
+              <Download size={16} />
               Export Excel
             </button>
           </div>
@@ -1182,8 +1173,7 @@ const StartupDashboard = () => {
                   className={styles.sortableHeader}
                   onClick={() => handleSort("docsubcatname")}
                 >
-                  Document <br />
-                  SubCategory {renderSortIndicator("docsubcatname")}
+                  Document SubCategory {renderSortIndicator("docsubcatname")}
                 </th>
                 <th
                   className={styles.sortableHeader}
@@ -1221,8 +1211,7 @@ const StartupDashboard = () => {
                 >
                   Doc State {renderSortIndicator("collecteddocobsoletestate")}
                 </th>
-                <th> </th>{" "}
-                {/* Changed from empty {} to "Actions" for clarity */}
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1239,7 +1228,8 @@ const StartupDashboard = () => {
                     }
                   >
                     <td className="flex items-center gap-2">
-                      {getStatusIcon(doc.status)} {doc.doccatname}
+                      {getStatusIcon(doc.status)}
+                      {doc.doccatname}
                     </td>
                     <td className="flex items-center gap-2">
                       {doc.docsubcatname}
@@ -1265,17 +1255,7 @@ const StartupDashboard = () => {
                     </td>
                     <td>
                       {doc.collecteddocobsoletestate ? (
-                        <p
-                          style={{
-                            background: "#ff8787",
-                            color: "#c92a2a",
-                            borderRadius: "4px",
-                            padding: "2px 6px",
-                            display: "inline-block",
-                            fontWeight: "600",
-                            fontSize: "12px",
-                          }}
-                        >
+                        <p className={styles.docStateBadge}>
                           {doc.collecteddocobsoletestate}
                         </p>
                       ) : (
@@ -1283,47 +1263,17 @@ const StartupDashboard = () => {
                       )}
                     </td>
                     <td className="text-right">
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "0.5rem",
-                          justifyContent: "flex-end",
-                          alignItems: "center",
-                          flexWrap: "nowrap",
-                        }}
-                      >
+                      <div className={styles.actionButtons}>
                         {doc.filepath && doc.status === "Submitted" ? (
                           <button
-                            style={{
-                              background:
-                                "linear-gradient(to right, #3b82f6, #2563eb)",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "0.3rem",
-                              padding: "0.3rem 0.6rem",
-                              fontSize: "0.75rem",
-                              cursor: "pointer",
-                              whiteSpace: "nowrap",
-                              flexShrink: 0,
-                            }}
+                            className={styles.viewButton}
                             onClick={() => handleViewDocument(doc.filepath)}
                           >
                             View Doc
                           </button>
                         ) : (
                           <button
-                            style={{
-                              background: "#6b7280",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "0.3rem",
-                              padding: "0.3rem 0.6rem",
-                              fontSize: "0.75rem",
-                              cursor: "not-allowed",
-                              opacity: "0.7",
-                              whiteSpace: "nowrap",
-                              flexShrink: 0,
-                            }}
+                            className={styles.disabledButton}
                             onClick={() => handleViewDocument(doc.filepath)}
                             disabled={!doc.filepath}
                           >
@@ -1335,30 +1285,11 @@ const StartupDashboard = () => {
                           Number(roleid) !== 1 &&
                           Number(roleid) !== 3 && (
                             <button
-                              style={{
-                                background: "#ff8787",
-                                color: "#c92a2a",
-                                border: "1px solid #ff8787",
-                                borderRadius: "0.3rem",
-                                padding: "0.3rem 0.6rem",
-                                fontSize: "0.75rem",
-                                cursor: "pointer",
-                                whiteSpace: "nowrap",
-                                flexShrink: 0,
-                                transition: "all 0.2s ease",
-                              }}
+                              className={styles.obsoleteButton}
                               onClick={() =>
                                 handleAbolishDocument(doc.filepath)
                               }
                               title="Mark document as obsolete"
-                              onMouseOver={(e) => {
-                                e.target.style.background = "#ff6b6b";
-                                e.target.style.transform = "scale(1.02)";
-                              }}
-                              onMouseOut={(e) => {
-                                e.target.style.background = "#ff8787";
-                                e.target.style.transform = "scale(1)";
-                              }}
                             >
                               Obsolete
                             </button>
@@ -1376,6 +1307,26 @@ const StartupDashboard = () => {
               )}
             </tbody>
           </table>
+
+          {isPreviewOpen && (
+            <div className={styles.previewModal}>
+              <div className={styles.previewContent}>
+                <button
+                  className={styles.closeButton}
+                  onClick={() => setIsPreviewOpen(false)}
+                >
+                  ✖
+                </button>
+                <iframe
+                  src={previewUrl}
+                  title="Document Preview"
+                  width="100%"
+                  height="500px"
+                  style={{ border: "none" }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Add this after your closing </table> tag, before </div> */}
           {totalPages > 1 && (
@@ -1401,7 +1352,6 @@ const StartupDashboard = () => {
               </button>
             </div>
           )}
-          {/* Rest of your code remains the same */}
         </div>
 
         {/* Add Document Modal - Only for users */}

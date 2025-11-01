@@ -13,9 +13,15 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   // If logged in but doesn't have permission → redirect properly
   if (allowedRoles.length > 0 && !allowedRoles.includes(roleId)) {
     // Redirect based on role
-    if (roleId === 1 || roleId === 3 || roleId === 7) {
+    if (roleId === 0 || roleId === 1 || roleId === 3 || roleId === 7) {
       return <Navigate to="/incubation/Dashboard" replace />;
-    } else if (roleId === 4 || roleId === 1 || roleId === 3 || roleId === 7) {
+    } else if (
+      roleId === 0 ||
+      roleId === 4 ||
+      roleId === 1 ||
+      roleId === 3 ||
+      roleId === 7
+    ) {
       return <Navigate to="/startup/Dashboard" replace />;
     } else {
       return <Navigate to="/" replace />;

@@ -3,13 +3,15 @@ import styles from "./CompanyTable.module.css";
 import { useNavigate } from "react-router-dom";
 import { DataContext } from "../Components/Datafetching/DataProvider";
 import api from "../Components/Datafetching/api";
+import { Download } from "lucide-react";
 
 // Direct import at the top level
 import * as XLSX from "xlsx";
 
 export default function CompanyTable({ companyList = [] }) {
   const navigate = useNavigate();
-  const { roleid, setadminviewData } = useContext(DataContext);
+  const { roleid, setadminviewData, incuserid, userid } =
+    useContext(DataContext);
 
   // Filters & Pagination States
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,7 +35,7 @@ export default function CompanyTable({ companyList = [] }) {
       try {
         const response = await api.post(
           "/generic/getcombyfield",
-          { userId: "39" },
+          { userId: 1, userIncId: incuserid },
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -299,6 +301,7 @@ export default function CompanyTable({ companyList = [] }) {
             onClick={exportToCSV}
             title="Export as CSV"
           >
+            <Download size={16} />
             Export CSV
           </button>
           <button
@@ -311,6 +314,7 @@ export default function CompanyTable({ companyList = [] }) {
             }
             disabled={!isXLSXAvailable}
           >
+            <Download size={16} />
             Export Excel
           </button>
         </div>
@@ -396,6 +400,12 @@ export default function CompanyTable({ companyList = [] }) {
               </th>
               <th
                 className={styles.sortableHeader}
+                onClick={() => handleSort("incubationshortname")}
+              >
+                Incubator {renderSortIndicator("incubationshortname")}
+              </th>
+              <th
+                className={styles.sortableHeader}
                 onClick={() => handleSort("incubateesdateofincorporation")}
               >
                 Date of Incorporation{" "}
@@ -427,6 +437,7 @@ export default function CompanyTable({ companyList = [] }) {
                     {item.incubateesstagelevelname || "—"}
                   </span>
                 </td>
+                <td>{item.incubationshortname}</td>
                 <td>
                   {item.incubateesdateofincorporation
                     ? new Date(

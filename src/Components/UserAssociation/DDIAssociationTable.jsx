@@ -18,7 +18,7 @@ import { IPAdress } from "../Datafetching/IPAdrees";
 export default function DDIAssociationTable() {
   const userId = sessionStorage.getItem("userid");
   const token = sessionStorage.getItem("token");
-  const incUserid = sessionStorage.getItem("incUserid");
+  const incUserid = sessionStorage.getItem("incuserid");
   const IP = IPAdress;
 
   const [associations, setAssociations] = useState([]);

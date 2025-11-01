@@ -7,7 +7,7 @@ import { IPAdress } from "../Datafetching/IPAdrees";
 export default function DocCatTable() {
   const userId = sessionStorage.getItem("userid");
   const token = sessionStorage.getItem("token");
-  const incUserid = sessionStorage.getItem("incUserid");
+  const incUserid = sessionStorage.getItem("incuserid");
 
   const [cats, setCats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,30 @@ export default function DocCatTable() {
     key: null,
     direction: "ascending",
   });
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return "";
+
+    // ✅ If it's an array, join it into one continuous string
+    if (Array.isArray(timestamp)) {
+      timestamp = timestamp
+        .map((num) => num.toString().padStart(2, "0"))
+        .join("");
+    } else {
+      timestamp = String(timestamp).replace(/,/g, "");
+    }
+
+    if (timestamp.length < 14) timestamp = timestamp.padEnd(14, "0");
+
+    const year = timestamp.substring(0, 4);
+    const month = timestamp.substring(4, 6);
+    const day = timestamp.substring(6, 8);
+    const hour = timestamp.substring(8, 10);
+    const minute = timestamp.substring(10, 12);
+    const second = timestamp.substring(12, 14);
+
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  };
 
   // ✅ Fetch all categories
   const IP = IPAdress;
@@ -420,13 +444,13 @@ export default function DocCatTable() {
                         ? cat.doccatcreatedby
                         : "Admin"}
                     </td>
-                    <td>{cat.doccatcreatedtime.replace("?", "")}</td>
+                    <td>{formatTimestamp(cat.doccatcreatedtime)}</td>
                     <td>
                       {isNaN(cat.doccatmodifiedby)
                         ? cat.doccatmodifiedby
                         : "Admin"}
                     </td>
-                    <td>{cat.doccatmodifiedtime.replace("?", "")}</td>
+                    <td>{formatTimestamp(cat.doccatmodifiedtime)}</td>
                     <td>
                       <button
                         className="btn-edit"

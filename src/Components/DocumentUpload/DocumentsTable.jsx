@@ -33,7 +33,7 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
   const userId = sessionStorage.getItem("userid");
   const token = sessionStorage.getItem("token");
   const roleid = sessionStorage.getItem("roleid");
-  const incUserid = sessionStorage.getItem("incUserid");
+  const incUserid = sessionStorage.getItem("incuserid");
 
   const [documents, setDocuments] = useState([]);
   const [cats, setCats] = useState([]);
@@ -84,6 +84,30 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
 
   // ✅ Fetch documents
   const IP = IPAdress;
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return "";
+
+    // ✅ If it's an array, join it into one continuous string
+    if (Array.isArray(timestamp)) {
+      timestamp = timestamp
+        .map((num) => num.toString().padStart(2, "0"))
+        .join("");
+    } else {
+      timestamp = String(timestamp).replace(/,/g, "");
+    }
+
+    if (timestamp.length < 14) timestamp = timestamp.padEnd(14, "0");
+
+    const year = timestamp.substring(0, 4);
+    const month = timestamp.substring(4, 6);
+    const day = timestamp.substring(6, 8);
+    const hour = timestamp.substring(8, 10);
+    const minute = timestamp.substring(10, 12);
+    const second = timestamp.substring(12, 14);
+
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  };
 
   // Expose the openAddModal function to parent components
   useImperativeHandle(ref, () => ({
@@ -1892,13 +1916,13 @@ const DocumentsTable = forwardRef(({ title = "📄 Documents" }, ref) => {
                             ? doc.documentcreatedby
                             : "Admin"}
                         </td>
-                        <td>{formatDate(doc.documentcreatedtime)}</td>
+                        <td>{formatTimestamp(doc.documentcreatedtime)}</td>
                         <td>
                           {isNaN(doc.documentmodifiedby)
                             ? doc.documentmodifiedby
                             : "Admin"}
                         </td>
-                        <td>{formatDate(doc.documentmodifiedtime)}</td>
+                        <td>{formatTimestamp(doc.documentmodifiedtime)}</td>
                         <td>
                           <div className="doccat-actions">
                             <button

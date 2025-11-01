@@ -23,7 +23,7 @@ const ChatApp = () => {
     name: sessionStorage.getItem("username") || "User",
     role: sessionStorage.getItem("userrole") || "incubatee",
     roleid: sessionStorage.getItem("roleid") || null,
-    incUserid: sessionStorage.getItem("incUserid") || null,
+    incUserid: sessionStorage.getItem("incuserid") || null,
   });
   const fileInputRef = useRef(null);
   const navigate = useNavigate();

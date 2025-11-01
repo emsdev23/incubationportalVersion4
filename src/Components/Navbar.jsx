@@ -7,6 +7,7 @@ import {
   CircleUserRound,
   FolderDown,
   MessageSquare,
+  FileBadge,
 } from "lucide-react";
 import ITELLogo from "../assets/ITEL_Logo.png";
 import MetricCardDashboard from "./MetricCardDashboard";
@@ -22,6 +23,7 @@ import { DataContext } from "../Components/Datafetching/DataProvider";
 import DDIDocumentUploadModal from "./DDI/DDIDocumentUploadModal ";
 import DDIDocumentsTable from "./DDI/DDIDocumentsTable";
 import { IPAdress } from "./Datafetching/IPAdrees";
+import IncubatorSelectorTable from "./IncubatorSelectorTable"; // Import the new component
 
 const Navbar = () => {
   const {
@@ -33,6 +35,7 @@ const Navbar = () => {
     listOfIncubatees,
     clearAllData,
     roleid, // Get roleid from context
+    selectedIncubation, // Get selected incubation
   } = useContext(DataContext);
   const navigate = useNavigate();
 
@@ -94,8 +97,9 @@ const Navbar = () => {
         },
       });
 
-      const userid = String(JSON.parse(sessionStorage.getItem("userid")));
-      const incUserId = String(JSON.parse(sessionStorage.getItem("incUserid")));
+      // Get session data without JSON.parse for incuserid
+      const userid = roleid === "0" ? "32" : sessionStorage.getItem("userid");
+      const incUserId = sessionStorage.getItem("incuserid"); // Don't parse this
       const token = sessionStorage.getItem("token");
 
       if (!userid || !token) {
@@ -140,19 +144,9 @@ const Navbar = () => {
         sessionStorage.removeItem("userid");
         sessionStorage.removeItem("token");
         sessionStorage.removeItem("roleid");
-        sessionStorage.removeItem("incUserid");
-
-        // Swal.fire({
-        //   icon: "success",
-        //   title: "Logged out successfully",
-        //   text: "Redirecting to login...",
-        //   timer: 1500,
-        //   showConfirmButton: false,
-        // });
+        sessionStorage.removeItem("incuserid");
 
         navigate("/", { replace: true });
-
-        // setTimeout(() => navigate("/", { replace: true }), 1200);
       } else {
         Swal.fire({
           icon: "error",
@@ -172,7 +166,10 @@ const Navbar = () => {
   };
 
   //get data form session storage
-  const userid = JSON.parse(sessionStorage.getItem("userid"));
+  const userid =
+    roleid === "0"
+      ? sessionStorage.getItem("userid")
+      : JSON.parse(sessionStorage.getItem("userid"));
   const sessionRoleid = sessionStorage.getItem("roleid"); // Get roleid from sessionStorage
   const token = sessionStorage.getItem("token");
   console.log(userid, sessionRoleid, token);
@@ -180,6 +177,7 @@ const Navbar = () => {
   // Check if user has roleid 3 (Incubator Operator)
   const isOperator = Number(roleid) === 3 || Number(sessionRoleid) === 3;
   const isDueDeeligence = Number(roleid) === 7 || Number(sessionRoleid) === 7;
+  const SuperAdmin = Number(roleid) === 0 || Number(sessionRoleid) === 0;
 
   const logedinProfile =
     roleid === "1"
@@ -190,8 +188,22 @@ const Navbar = () => {
       ? "Due Deligence Inspector"
       : roleid === "4"
       ? "Incubatee"
-      : "User";
+      : "Admin";
   console.log(logedinProfile);
+
+  // Function to get the logo URL
+  const getLogoUrl = () => {
+    if (selectedIncubation && selectedIncubation.incubationslogopath) {
+      // If the path starts with http, use it directly
+      if (selectedIncubation.incubationslogopath.startsWith("http")) {
+        return selectedIncubation.incubationslogopath;
+      }
+      // Otherwise, prepend the base URL
+      return `${IPAdress}${selectedIncubation.incubationslogopath}`;
+    }
+    // Return default logo if no selected incubation or no logo path
+    return ITELLogo;
+  };
 
   useEffect(() => {}, []);
   return (
@@ -201,9 +213,18 @@ const Navbar = () => {
         <div className={styles.container}>
           {/* Left - Logo + Title */}
           <div className={styles.logoSection}>
-            <img src={ITELLogo} className={styles.logoIcon} alt="ITEL Logo" />
+            <img
+              src={getLogoUrl()}
+              className={styles.logoIcon}
+              alt="Incubator Logo"
+            />
             <div>
-              <h1 className={styles.title}>ITEL Incubation Portal</h1>
+              <h1 className={styles.title}>
+                {/* {selectedIncubation
+                  ? `${selectedIncubation.incubationshortname} Portal`
+                  : "ITEL Incubation Portal"} */}
+                ITEL Incubation Portal
+              </h1>
               <p className={styles.subtitle}>Startup Management Dashboard</p>
             </div>
           </div>
@@ -211,7 +232,18 @@ const Navbar = () => {
           {/* Right - Actions */}
           <div className={styles.actions}>
             {/* Chat button now available for all users */}
-            {Number(roleid) !== 7 && (
+            {Number(roleid) === 0 && (
+              <NavLink
+                to="/Incubation/Dashboard/Incubation"
+                style={{ textDecoration: "none" }}
+              >
+                <button className={styles.btnPrimary}>
+                  <FileBadge className={styles.icon} />
+                  Incubator Management
+                </button>
+              </NavLink>
+            )}
+            {Number(roleid) !== 7 && !SuperAdmin && (
               <NavLink
                 to="/Incubation/Dashboard/Chats"
                 style={{ textDecoration: "none" }}
@@ -237,7 +269,7 @@ const Navbar = () => {
             )}
 
             {/* Only show User Management button if roleid is not 3 */}
-            {!isOperator && !isDueDeeligence && (
+            {!isOperator && !isDueDeeligence && !SuperAdmin && (
               <NavLink
                 to="/Incubation/Dashboard/Userassociation"
                 style={{ textDecoration: "none" }}
@@ -250,7 +282,7 @@ const Navbar = () => {
             )}
 
             {/* Only show Document Management button if roleid is not 3 */}
-            {!isOperator && !isDueDeeligence && (
+            {!isOperator && !isDueDeeligence && !SuperAdmin && (
               <NavLink
                 to="/Incubation/Dashboard/AddDocuments"
                 style={{ textDecoration: "none" }}
@@ -261,14 +293,6 @@ const Navbar = () => {
                 </button>
               </NavLink>
             )}
-
-            {/* <button
-              className={styles.btnPrimary}
-              onClick={() => setIsModalOpen(true)}
-            >
-              <Plus className={styles.icon} />
-              Add Incubatee
-            </button> */}
 
             <button
               className={styles.btnPrimary}
@@ -300,6 +324,9 @@ const Navbar = () => {
 
       {/* Main Content */}
       <main className={styles.main}>
+        {roleid === "0" ? <IncubatorSelectorTable /> : ""}
+
+        <br />
         {roleid === "7" ? "" : <MetricCardDashboard stats={stats} />}
 
         {roleid === "7" ? (
@@ -310,13 +337,16 @@ const Navbar = () => {
             <FundingStageChart byStage={byStage} />
           </div>
         )}
+
+        {/* Incubator Selector and Table Component */}
+
         <CompanyTable companyList={listOfIncubatees} />
         <br />
         <DDIDocumentUploadModal />
         <br />
         <DocumentTable />
         <br />
-        <DDIDocumentsTable />
+        {roleid === "0" ? "" : <DDIDocumentsTable />}
       </main>
 
       {/* Modal */}
